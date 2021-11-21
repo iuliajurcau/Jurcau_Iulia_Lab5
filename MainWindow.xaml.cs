@@ -79,10 +79,44 @@ namespace Jurcau_Iulia_Lab5
         private void btnAdd_Click(object sender, RoutedEventArgs e)
         {
             action = ActionState.New;
+            BindingOperations.ClearBinding(firstNameTextBox1, TextBox.TextProperty);
+            BindingOperations.ClearBinding(lastNameTextBox1, TextBox.TextProperty);
+            SetValidationBinding();
         }
         private void btnEditO_Click(object sender, RoutedEventArgs e)
         {
             action = ActionState.Edit;
+            BindingOperations.ClearBinding(firstNameTextBox1, TextBox.TextProperty);
+            BindingOperations.ClearBinding(lastNameTextBox1, TextBox.TextProperty);
+            SetValidationBinding();
+        }
+
+        private void SetValidationBinding()
+        {
+            Binding firstNameValidationBinding = new Binding();
+            object customerVSource = null;
+            firstNameValidationBinding.Source = customerVSource;
+            firstNameValidationBinding.Path = new PropertyPath("FirstName");
+            firstNameValidationBinding.NotifyOnValidationError = true;
+            firstNameValidationBinding.Mode = BindingMode.TwoWay;
+            firstNameValidationBinding.UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged;
+
+            //string required
+            firstNameValidationBinding.ValidationRules.Add(new StringNotEmpty());
+            firstNameTextBox1.SetBinding(TextBox.TextProperty,
+           firstNameValidationBinding);
+            Binding lastNameValidationBinding = new Binding();
+            lastNameValidationBinding.Source = customerVSource;
+            lastNameValidationBinding.Path = new PropertyPath("LastName");
+            lastNameValidationBinding.NotifyOnValidationError = true;
+            lastNameValidationBinding.Mode = BindingMode.TwoWay;
+            lastNameValidationBinding.UpdateSourceTrigger =
+           UpdateSourceTrigger.PropertyChanged;
+            //string min length validator
+            lastNameValidationBinding.ValidationRules.Add(new StringMinLengthValid());
+            lastNameTextBox1.SetBinding(TextBox.TextProperty, lastNameValidationBinding);
+            //setare binding nou
+            throw new NotImplementedException();
         }
 
         private void btnDeleteO_Click(object sender, RoutedEventArgs e)
@@ -196,8 +230,8 @@ namespace Jurcau_Iulia_Lab5
                 try
                 {
                     inventory = (Inventory)inventoryDataGrid.SelectedItem;
-                    inventory.Make = firstNameTextBox1.Text.Trim();
-                    inventory.Color = lastNameTextBox1.Text.Trim();
+                    ctx.Inventories.Remove(inventory);
+                    ctx.SaveChanges();
 
 
                     //salvam modificarile
@@ -267,23 +301,36 @@ namespace Jurcau_Iulia_Lab5
                     break;
             }
             ReInitialize();
+            
         }
 
         private void SaveOrders()
         {
             Order order = null;
-
-            Customer customer = (Customer)cmbCustomers.SelectedItem;
-            Inventory inventory = (Inventory)cmbInventory.SelectedItem;
-            //instantiem Order entity
-            order = new Order()
+            if (action == ActionState.New)
             {
-
-                CustId = customer.CustId,
-                CarId = inventory.CarId
-            };
-            //adaugam entitatea nou creata in context
-            ctx.Orders.Add(order);
+                try
+                {
+                    Customer customer = (Customer)cmbCustomers.SelectedItem;
+                    Inventory inventory = (Inventory)cmbInventory.SelectedItem;
+                    //instantiem Order entity
+                    order = new Order()
+                    {
+                        CustId = customer.CustId,
+                        CarId = inventory.CarId
+                    };
+                    //adaugam entitatea nou creata in context
+                    ctx.Orders.Add(order);
+                    //salvam modificarile
+                    ctx.SaveChanges();
+                    BindDataGrid();
+                }
+                catch (DataException ex)
+                {
+                    MessageBox.Show(ex.Message);
+                }
+            }
+            else
 
 
 
@@ -356,6 +403,8 @@ namespace Jurcau_Iulia_Lab5
             customerOrdersVSource.Source = queryOrder.ToList();
         }
     }
+
+    
 
 }
 
